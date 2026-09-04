@@ -1,0 +1,10 @@
+{
+  "name": "indian-tts-api",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "edge-tts": "^1.0.1",
+    "express": "^4.19.2"
+  }
+}
