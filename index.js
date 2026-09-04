@@ -1,11 +1,12 @@
 import express from "express";
 import cors from "cors";
-import { EdgeTTS } from "edge-tts";   // package name check kar lena
+import { MsEdgeTTS, OUTPUT_FORMAT } from "msedge-tts";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Best Indian female voices
 const VOICES = {
   hindi: "hi-IN-SwaraNeural",
   english: "en-IN-NeerjaNeural",
@@ -24,23 +25,24 @@ app.get("/", (req, res) => {
 });
 
 app.get("/speak", async (req, res) => {
-  const text = req.query.text;
-  const voiceKey = (req.query.voice || "hindi").toLowerCase();
-  const voice = VOICES[voiceKey] || VOICES.hindi;
-
-  if (!text) {
-    return res.status(400).json({ error: "text parameter is required" });
-  }
-
   try {
-    const tts = new EdgeTTS(text, voice);
-    const result = await tts.synthesize();
+    const text = req.query.text;
+    const voiceKey = (req.query.voice || "hindi").toLowerCase();
+    const voice = VOICES[voiceKey] || VOICES.hindi;
 
-    res.set({
-      "Content-Type": "audio/mpeg",
-      "Content-Disposition": "inline; filename=speech.mp3"
-    });
-    res.send(Buffer.from(result.audio));
+    if (!text) {
+      return res.status(400).json({ error: "text parameter required" });
+    }
+
+    const tts = new MsEdgeTTS();
+    await tts.setMetadata(voice, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3);
+
+    const { audioStream } = tts.toStream(text);
+
+    res.setHeader("Content-Type", "audio/mpeg");
+    res.setHeader("Content-Disposition", "inline; filename=speech.mp3");
+
+    audioStream.pipe(res);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "TTS failed", details: error.message });
@@ -48,27 +50,28 @@ app.get("/speak", async (req, res) => {
 });
 
 app.get("/download", async (req, res) => {
-  const text = req.query.text;
-  const voiceKey = (req.query.voice || "hindi").toLowerCase();
-  const voice = VOICES[voiceKey] || VOICES.hindi;
-
-  if (!text) {
-    return res.status(400).json({ error: "text parameter is required" });
-  }
-
   try {
-    const tts = new EdgeTTS(text, voice);
-    const result = await tts.synthesize();
+    const text = req.query.text;
+    const voiceKey = (req.query.voice || "hindi").toLowerCase();
+    const voice = VOICES[voiceKey] || VOICES.hindi;
 
-    res.set({
-      "Content-Type": "audio/mpeg",
-      "Content-Disposition": "attachment; filename=shaurya_speech.mp3"
-    });
-    res.send(Buffer.from(result.audio));
+    if (!text) {
+      return res.status(400).json({ error: "text parameter required" });
+    }
+
+    const tts = new MsEdgeTTS();
+    await tts.setMetadata(voice, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3);
+
+    const { audioStream } = tts.toStream(text);
+
+    res.setHeader("Content-Type", "audio/mpeg");
+    res.setHeader("Content-Disposition", "attachment; filename=shaurya_speech.mp3");
+
+    audioStream.pipe(res);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "TTS failed", details: error.message });
   }
 });
 
-// Vercel ke liye export
 export default app;
